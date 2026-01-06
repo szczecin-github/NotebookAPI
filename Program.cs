@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt; // Added this missing import
 using System.Security.Claims;
 using System.Text;
 
@@ -78,12 +79,14 @@ app.MapPost("/login", async (UserManager<IdentityUser> userManager, LoginDto dto
             new Claim(ClaimTypes.Email, user.Email!)
         }),
         Expires = DateTime.UtcNow.AddHours(1),
-        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha266Signature)
+        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
     };
     var handler = new JwtSecurityTokenHandler();
     var token = handler.WriteToken(handler.CreateToken(descriptor));
 
-    return Results.Text(token); // Returns plain string as expected by tests
+    // ZMIANA: Results.Json zwraca token jako "ciąg_znaków" (w cudzysłowie),
+    // co pasuje do logiki testów (które usuwają pierwszy i ostatni znak).
+    return Results.Json(token);
 });
 
 // Get Notes
